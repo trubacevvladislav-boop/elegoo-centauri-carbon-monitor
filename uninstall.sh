@@ -7,23 +7,25 @@ NC='\033[0m'
 
 INSTALL_DIR="/opt/elegoo-monitor"
 
-echo -e "${YELLOW}Удаление Elegoo Centauri Carbon Monitor...${NC}"
+echo -e "${YELLOW}Uninstalling Elegoo Centauri Carbon Monitor...${NC}"
 echo ""
 
 if [ -d "$INSTALL_DIR" ]; then
-    echo "Остановка контейнера..."
-    cd "$INSTALL_DIR"
+    echo "Stopping container..."
+    cd "$INSTALL_DIR" || exit
     sudo docker compose down 2>/dev/null
-    echo -e "${GREEN}✓ Контейнер остановлен${NC}"
+    echo -e "${GREEN}✓ Container stopped${NC}"
+else
+    echo -e "${YELLOW}Directory $INSTALL_DIR not found${NC}"
 fi
 
-echo "Удаление Docker образа..."
-sudo docker rmi elegoo-monitor-printer-monitor:latest 2>/dev/null
-echo -e "${GREEN}✓ Образ удален${NC}"
+echo "Removing Docker image..."
+sudo docker rmi elegoo-monitor-printer-monitor:latest 2>/dev/null || true
+echo -e "${GREEN}✓ Image removed${NC}"
 
-echo "Удаление файлов..."
+echo "Removing files..."
 sudo rm -rf "$INSTALL_DIR"
-echo -e "${GREEN}✓ Файлы удалены${NC}"
+echo -e "${GREEN}✓ Files removed${NC}"
 
 echo ""
-echo -e "${GREEN}✅ Удаление завершено!${NC}"
+echo -e "${GREEN}✅ Uninstallation complete!${NC}"
