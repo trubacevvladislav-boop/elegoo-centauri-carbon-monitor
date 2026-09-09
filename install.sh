@@ -7,6 +7,92 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Выбор языка
+echo "Выберите язык / Select language:"
+echo "  1) Русский"
+echo "  2) English"
+read -p "Выберите (1-2): " lang_choice
+
+if [ "$lang_choice" = "1" ]; then
+    LANGUAGE="ru"
+    MSG_WELCOME="Установка Elegoo Centauri Carbon Monitor"
+    MSG_CHECKING_DOCKER="Проверка наличия Docker..."
+    MSG_DOCKER_NOT_FOUND="Docker не установлен!"
+    MSG_INSTALL_DOCKER="Установите Docker:"
+    MSG_DOCKER_FOUND="Docker найден"
+    MSG_INSTALL_DIR="Директория установки"
+    MSG_DIR_EXISTS="Директория уже существует"
+    MSG_OVERWRITE="Перезаписать? (y/n)"
+    MSG_SETUP="Настройка"
+    MSG_PRINTER_IP="IP-адрес принтера"
+    MSG_BOT_TOKEN="Получите токен у @BotFather в Telegram"
+    MSG_ENTER_TOKEN="Токен Telegram бота"
+    MSG_TOKEN_EMPTY="Токен не может быть пустым"
+    MSG_USE_PROXY="Использовать прокси для Telegram? (y/n)"
+    MSG_PROXY_EXAMPLES="Примеры: http://127.0.0.1:8080 или socks5://127.0.0.1:1080"
+    MSG_PROXY_URL="URL прокси"
+    MSG_GET_CHAT_ID="Получение Chat ID"
+    MSG_SEND_MESSAGE="Отправьте ЛЮБОЕ сообщение вашему боту в Telegram"
+    MSG_EXAMPLE_MESSAGE="Например: /start или просто 'привет'"
+    MSG_PRESS_ENTER="Нажмите Enter после отправки сообщения..."
+    MSG_CHAT_ID_FOUND="Найден Chat ID"
+    MSG_IS_YOUR_CHAT="Это ваш Chat ID? (y/n)"
+    MSG_ENTER_MANUALLY="Ввести Chat ID вручную? (y/n)"
+    MSG_CHAT_ID="Chat ID"
+    MSG_CREATING_FILES="Создание файлов"
+    MSG_ENV_CREATED=".env создан"
+    MSG_FILES_COPIED="Файлы скопированы"
+    MSG_LAUNCHING="Запуск"
+    MSG_CONTAINER_STARTED="Контейнер запущен!"
+    MSG_ERROR_LAUNCH="Ошибка запуска"
+    MSG_INSTALL_COMPLETE="Установка завершена!"
+    MSG_MONITOR_ACTIVE="Мониторинг принтера активен!"
+    MSG_USEFUL_COMMANDS="Полезные команды:"
+    MSG_LOGS="Логи"
+    MSG_STOP="Стоп"
+    MSG_RESTART="Рестарт"
+    MSG_UNINSTALL="Удаление"
+else
+    LANGUAGE="en"
+    MSG_WELCOME="Installing Elegoo Centauri Carbon Monitor"
+    MSG_CHECKING_DOCKER="Checking Docker installation..."
+    MSG_DOCKER_NOT_FOUND="Docker is not installed!"
+    MSG_INSTALL_DOCKER="Install Docker:"
+    MSG_DOCKER_FOUND="Docker found"
+    MSG_INSTALL_DIR="Installation directory"
+    MSG_DIR_EXISTS="Directory already exists"
+    MSG_OVERWRITE="Overwrite? (y/n)"
+    MSG_SETUP="Setup"
+    MSG_PRINTER_IP="Printer IP address"
+    MSG_BOT_TOKEN="Get token from @BotFather in Telegram"
+    MSG_ENTER_TOKEN="Telegram bot token"
+    MSG_TOKEN_EMPTY="Token cannot be empty"
+    MSG_USE_PROXY="Use proxy for Telegram? (y/n)"
+    MSG_PROXY_EXAMPLES="Examples: http://127.0.0.1:8080 or socks5://127.0.0.1:1080"
+    MSG_PROXY_URL="Proxy URL"
+    MSG_GET_CHAT_ID="Getting Chat ID"
+    MSG_SEND_MESSAGE="Send ANY message to your bot in Telegram"
+    MSG_EXAMPLE_MESSAGE="For example: /start or just 'hello'"
+    MSG_PRESS_ENTER="Press Enter after sending the message..."
+    MSG_CHAT_ID_FOUND="Found Chat ID"
+    MSG_IS_YOUR_CHAT="Is this your Chat ID? (y/n)"
+    MSG_ENTER_MANUALLY="Enter Chat ID manually? (y/n)"
+    MSG_CHAT_ID="Chat ID"
+    MSG_CREATING_FILES="Creating files"
+    MSG_ENV_CREATED=".env created"
+    MSG_FILES_COPIED="Files copied"
+    MSG_LAUNCHING="Launching"
+    MSG_CONTAINER_STARTED="Container started!"
+    MSG_ERROR_LAUNCH="Launch error"
+    MSG_INSTALL_COMPLETE="Installation complete!"
+    MSG_MONITOR_ACTIVE="Printer monitoring is active!"
+    MSG_USEFUL_COMMANDS="Useful commands:"
+    MSG_LOGS="Logs"
+    MSG_STOP="Stop"
+    MSG_RESTART="Restart"
+    MSG_UNINSTALL="Uninstall"
+fi
+
 print_header() {
     echo -e "\n${BLUE}═══════════════════════════════════════════════════════════${NC}"
     echo -e "${BLUE}  $1${NC}"
@@ -19,32 +105,32 @@ print_warning() { echo -e "${YELLOW}⚠ $1${NC}"; }
 print_info() { echo -e "${BLUE}ℹ $1${NC}"; }
 
 check_docker() {
-    print_info "Проверка наличия Docker..."
+    print_info "$MSG_CHECKING_DOCKER"
     if ! command -v docker &> /dev/null; then
-        print_error "Docker не установлен!"
-        echo -e "\nУстановите Docker:"
+        print_error "$MSG_DOCKER_NOT_FOUND"
+        echo -e "\n$MSG_INSTALL_DOCKER"
         echo "  curl -fsSL https://get.docker.com -o get-docker.sh"
         echo "  sudo sh get-docker.sh"
         exit 1
     fi
     
     if ! docker compose version &> /dev/null; then
-        print_error "Docker Compose не установлен!"
+        print_error "Docker Compose not installed!"
         exit 1
     fi
     
-    print_success "Docker найден: $(docker --version)"
+    print_success "$MSG_DOCKER_FOUND: $(docker --version)"
 }
 
 get_chat_id() {
     local token=$1
     local proxy=$2
     
-    print_header "🔍 Получение Chat ID"
-    print_info "Отправьте ЛЮБОЕ сообщение вашему боту в Telegram"
-    print_info "Например: /start или просто 'привет'"
+    print_header "🔍 $MSG_GET_CHAT_ID"
+    print_info "$MSG_SEND_MESSAGE"
+    print_info "$MSG_EXAMPLE_MESSAGE"
     echo ""
-    read -p "Нажмите Enter после отправки сообщения..."
+    read -p "$MSG_PRESS_ENTER"
     
     local url="https://api.telegram.org/bot${token}/getUpdates"
     local response
@@ -56,7 +142,7 @@ get_chat_id() {
     fi
     
     if [ -z "$response" ]; then
-        print_error "Не удалось получить ответ от Telegram API"
+        print_error "Failed to get response from Telegram API"
         return 1
     fi
     
@@ -79,14 +165,14 @@ except:
 " 2>/dev/null)
     
     if [ -z "$chat_id" ]; then
-        print_error "Не удалось найти chat_id"
+        print_error "Failed to find chat_id"
         return 1
     fi
     
     echo ""
-    print_success "Найден Chat ID: $chat_id"
+    print_success "$MSG_CHAT_ID_FOUND: $chat_id"
     echo ""
-    read -p "Это ваш Chat ID? (y/n): " confirm
+    read -p "$MSG_IS_YOUR_CHAT " confirm
     
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
         echo "$chat_id"
@@ -98,16 +184,16 @@ except:
 
 main() {
     clear
-    print_header "🖨️  Установка Elegoo Centauri Carbon Monitor"
+    print_header "🖨️  $MSG_WELCOME"
     
     check_docker
     
     INSTALL_DIR="/opt/elegoo-monitor"
-    print_info "Директория установки: $INSTALL_DIR"
+    print_info "$MSG_INSTALL_DIR: $INSTALL_DIR"
     
     if [ -d "$INSTALL_DIR" ]; then
-        print_warning "Директория уже существует"
-        read -p "Перезаписать? (y/n): " overwrite
+        print_warning "$MSG_DIR_EXISTS"
+        read -p "$MSG_OVERWRITE " overwrite
         if [[ ! "$overwrite" =~ ^[Yy]$ ]]; then
             exit 1
         fi
@@ -117,27 +203,27 @@ main() {
     sudo mkdir -p "$INSTALL_DIR"
     cd "$INSTALL_DIR"
     
-    print_header "📝 Настройка"
+    print_header "📝 $MSG_SETUP"
     
-    read -p "IP-адрес принтера [192.168.0.234]: " PRINTER_IP
+    read -p "$MSG_PRINTER_IP [192.168.0.234]: " PRINTER_IP
     PRINTER_IP=${PRINTER_IP:-192.168.0.234}
     
     echo ""
-    print_info "Получите токен у @BotFather в Telegram"
+    print_info "$MSG_BOT_TOKEN"
     while true; do
-        read -p "Токен Telegram бота: " TG_BOT_TOKEN
+        read -p "$MSG_ENTER_TOKEN: " TG_BOT_TOKEN
         if [ -n "$TG_BOT_TOKEN" ]; then
             break
         fi
-        print_error "Токен не может быть пустым"
+        print_error "$MSG_TOKEN_EMPTY"
     done
     
     echo ""
-    read -p "Использовать прокси для Telegram? (y/n): " use_proxy
+    read -p "$MSG_USE_PROXY " use_proxy
     PROXY_URL=""
     if [[ "$use_proxy" =~ ^[Yy]$ ]]; then
-        print_info "Примеры: http://127.0.0.1:8080 или socks5://127.0.0.1:1080"
-        read -p "URL прокси: " PROXY_URL
+        print_info "$MSG_PROXY_EXAMPLES"
+        read -p "$MSG_PROXY_URL: " PROXY_URL
     fi
     
     while true; do
@@ -147,43 +233,45 @@ main() {
             break
         fi
         
-        read -p "Ввести Chat ID вручную? (y/n): " manual
+        read -p "$MSG_ENTER_MANUALLY " manual
         if [[ "$manual" =~ ^[Yy]$ ]]; then
-            read -p "Chat ID: " TG_CHAT_ID
+            read -p "$MSG_CHAT_ID: " TG_CHAT_ID
             break
         fi
     done
     
-    print_header "🔧 Создание файлов"
+    print_header "🔧 $MSG_CREATING_FILES"
     
     sudo tee .env > /dev/null <<ENVEOF
 PRINTER_IP=$PRINTER_IP
 TG_BOT_TOKEN=$TG_BOT_TOKEN
 TG_CHAT_ID=$TG_CHAT_ID
 PROXY_URL=$PROXY_URL
+LANGUAGE=$LANGUAGE
 ENVEOF
-    print_success ".env создан"
+    print_success "$MSG_ENV_CREATED"
     
     sudo cp /home/$USER/elegoo-centauri-carbon-monitor/main.py .
     sudo cp /home/$USER/elegoo-centauri-carbon-monitor/Dockerfile .
     sudo cp /home/$USER/elegoo-centauri-carbon-monitor/docker-compose.yml .
-    print_success "Файлы скопированы"
+    print_success "$MSG_FILES_COPIED"
     
-    print_header "🚀 Запуск"
+    print_header "🚀 $MSG_LAUNCHING"
     if sudo docker compose up -d --build; then
-        print_success "Контейнер запущен!"
+        print_success "$MSG_CONTAINER_STARTED"
     else
-        print_error "Ошибка запуска"
+        print_error "$MSG_ERROR_LAUNCH"
         exit 1
     fi
     
-    print_header "✅ Установка завершена!"
-    echo -e "${GREEN}Мониторинг принтера активен!${NC}"
+    print_header "✅ $MSG_INSTALL_COMPLETE"
+    echo -e "${GREEN}$MSG_MONITOR_ACTIVE${NC}"
     echo ""
-    echo "Полезные команды:"
-    echo "  Логи:    sudo docker logs -f elegoo-monitor"
-    echo "  Стоп:    cd $INSTALL_DIR && sudo docker compose down"
-    echo "  Рестарт: cd $INSTALL_DIR && sudo docker compose restart"
+    echo "$MSG_USEFUL_COMMANDS"
+    echo "  $MSG_LOGS:    sudo docker logs -f elegoo-monitor"
+    echo "  $MSG_STOP:    cd $INSTALL_DIR && sudo docker compose down"
+    echo "  $MSG_RESTART: cd $INSTALL_DIR && sudo docker compose restart"
+    echo "  $MSG_UNINSTALL: sudo $INSTALL_DIR/uninstall.sh"
 }
 
 main
