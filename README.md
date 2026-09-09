@@ -25,12 +25,13 @@ A Python script in a Docker container that:
 - ✅ Automatically reconnects on connection drops
 - ✅ Supports HTTP/SOCKS5 proxies for regions with Telegram restrictions
 
-### 🚀 Quick Installation (1 Command)
+### 🚀 Quick Installation
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/trubacevvladislav-boop/elegoo-centauri-carbon-monitor/main/install.sh | sudo bash
+git clone https://github.com/trubacevvladislav-boop/elegoo-centauri-carbon-monitor.git
+cd elegoo-centauri-carbon-monitor
+sudo ./install.sh
 ```
-*(Or clone the repo and run `sudo ./install.sh`)*
 
 The interactive installer will:
 1. Check for Docker.
@@ -72,12 +73,13 @@ Python-скрипт в Docker-контейнере, который:
 - ✅ Автоматически переподключается при разрывах связи
 - ✅ Поддерживает HTTP/SOCKS5 прокси для регионов с блокировками Telegram
 
-### 🚀 Быстрая установка (1 команда)
+### 🚀 Быстрая установка
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/trubacevvladislav-boop/elegoo-centauri-carbon-monitor/main/install.sh | sudo bash
+git clone https://github.com/trubacevvladislav-boop/elegoo-centauri-carbon-monitor.git
+cd elegoo-centauri-carbon-monitor
+sudo ./install.sh
 ```
-*(Или склонируйте репозиторий и запустите `sudo ./install.sh`)*
 
 Интерактивный установщик:
 1. Проверит наличие Docker.
