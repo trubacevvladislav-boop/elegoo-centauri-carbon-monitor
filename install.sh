@@ -1,16 +1,13 @@
 #!/bin/bash
 
-# Определяем директорию, где лежит сам скрипт (работает даже через sudo)
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Цвета для вывода
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Выбор языка
 echo "Выберите язык / Select language:"
 echo "  1) Русский"
 echo "  2) English"
@@ -51,6 +48,15 @@ if [ "$lang_choice" = "1" ]; then
     MSG_STOP="Стоп"
     MSG_RESTART="Рестарт"
     MSG_UNINSTALL="Удаление"
+    
+    MSG_CHAT_ID_INSTR_1="1. Откройте Telegram и найдите вашего бота."
+    MSG_CHAT_ID_INSTR_2="2. Отправьте ему ЛЮБОЕ сообщение (например, 'test' или '/start')."
+    MSG_CHAT_ID_INSTR_3="3. После отправки нажмите Enter здесь для проверки."
+    MSG_CHAT_ID_PRESS_ENTER="Нажмите Enter..."
+    MSG_CHAT_ID_FOUND="✓ Найдено сообщение в чате ID"
+    MSG_CHAT_ID_TEXT="Текст сообщения"
+    MSG_CHAT_ID_CONFIRM="Это ваш чат? (y/n)"
+    MSG_CHAT_ID_MANUAL="Ввести Chat ID вручную? (y/n)"
 else
     LANGUAGE="en"
     MSG_WELCOME="Installing Elegoo Centauri Carbon Monitor"
@@ -86,6 +92,15 @@ else
     MSG_STOP="Stop"
     MSG_RESTART="Restart"
     MSG_UNINSTALL="Uninstall"
+    
+    MSG_CHAT_ID_INSTR_1="1. Open Telegram and find your bot."
+    MSG_CHAT_ID_INSTR_2="2. Send it ANY message (e.g., 'test' or '/start')."
+    MSG_CHAT_ID_INSTR_3="3. After sending, press Enter here to check."
+    MSG_CHAT_ID_PRESS_ENTER="Press Enter..."
+    MSG_CHAT_ID_FOUND="✓ Found message in chat ID"
+    MSG_CHAT_ID_TEXT="Message text"
+    MSG_CHAT_ID_CONFIRM="Is this your chat? (y/n)"
+    MSG_CHAT_ID_MANUAL="Enter Chat ID manually? (y/n)"
 fi
 
 print_header() {
@@ -124,10 +139,10 @@ get_chat_id() {
     echo -e "\n${BLUE}═══════════════════════════════════════════════════════════${NC}" >&2
     echo -e "${BLUE}  🔍 Получение Chat ID / Getting Chat ID${NC}" >&2
     echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}\n" >&2
-    echo -e "${BLUE}ℹ 1. Откройте Telegram и найдите вашего бота.${NC}" >&2
-    echo -e "${BLUE}ℹ 2. Отправьте ему ЛЮБОЕ сообщение (например, 'test' или '/start').${NC}" >&2
-    echo -e "${BLUE}ℹ 3. После отправки нажмите Enter здесь для проверки.${NC}" >&2
-    read -p "Нажмите Enter... / Press Enter..." dummy >&2
+    echo -e "${BLUE}ℹ $MSG_CHAT_ID_INSTR_1${NC}" >&2
+    echo -e "${BLUE}ℹ $MSG_CHAT_ID_INSTR_2${NC}" >&2
+    echo -e "${BLUE}ℹ $MSG_CHAT_ID_INSTR_3${NC}" >&2
+    read -p "$MSG_CHAT_ID_PRESS_ENTER " dummy >&2
 
     local url="https://api.telegram.org/bot${token}/getUpdates"
     local response
@@ -170,10 +185,10 @@ except:
     local found_chat_id="${parsed_data%%|*}"
     local msg_text="${parsed_data#*|}"
 
-    echo -e "\n${GREEN}✓ Найдено сообщение в чате ID / Found message in chat ID: $found_chat_id${NC}" >&2
-    echo -e "${GREEN}  Текст сообщения / Message text: '$msg_text'${NC}" >&2
+    echo -e "\n${GREEN}$MSG_CHAT_ID_FOUND: $found_chat_id${NC}" >&2
+    echo -e "${GREEN}  $MSG_CHAT_ID_TEXT: '$msg_text'${NC}" >&2
     echo "" >&2
-    read -p "Это ваш чат? (y/n) / Is this your chat? (y/n): " confirm >&2
+    read -p "$MSG_CHAT_ID_CONFIRM " confirm >&2
     
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
         echo "$found_chat_id"
@@ -236,14 +251,13 @@ main() {
     fi
     
     while true; do
-        # Передаем прокси Telegram в функцию, если он есть
         chat_id=$(get_chat_id "$TG_BOT_TOKEN" "$TG_PROXY_URL")
         if [ -n "$chat_id" ]; then
             TG_CHAT_ID="$chat_id"
             break
         fi
         
-        read -p "Ввести Chat ID вручную? / Enter Chat ID manually? (y/n): " manual
+        read -p "$MSG_CHAT_ID_MANUAL " manual
         if [[ "$manual" =~ ^[Yy]$ ]]; then
             read -p "Chat ID: " TG_CHAT_ID
             break
@@ -261,21 +275,19 @@ LANGUAGE=$LANGUAGE
 ENVEOF
     print_success "$MSG_ENV_CREATED"
     
-    # Генерируем Dockerfile динамически в зависимости от ответа про прокси для pip
+    # ГЕНЕРАЦИЯ DOCKERFILE С ПОДДЕРЖКОЙ SOCKS (ИСПРАВЛЕНО)
     if [ -n "$PIP_PROXY_URL" ]; then
         sudo tee Dockerfile > /dev/null <<DOCKEREOF
 FROM python:3.11-slim
 WORKDIR /app
 
-# Прокси для скачивания пакетов во время сборки
 ENV http_proxy=$PIP_PROXY_URL
 ENV https_proxy=$PIP_PROXY_URL
 ENV HTTP_PROXY=$PIP_PROXY_URL
 ENV HTTPS_PROXY=$PIP_PROXY_URL
 
-RUN pip install --no-cache-dir websockets httpx
+RUN pip install --no-cache-dir websockets "httpx[socks]"
 
-# Очищаем переменные прокси после установки
 ENV http_proxy=""
 ENV https_proxy=""
 ENV HTTP_PROXY=""
@@ -289,7 +301,7 @@ DOCKEREOF
 FROM python:3.11-slim
 WORKDIR /app
 
-RUN pip install --no-cache-dir websockets httpx
+RUN pip install --no-cache-dir websockets "httpx[socks]"
 
 COPY main.py .
 CMD ["python", "main.py"]
@@ -303,7 +315,8 @@ DOCKEREOF
     print_success "$MSG_FILES_COPIED"
     
     print_header "🚀 $MSG_LAUNCHING"
-    if sudo docker compose up -d --build; then
+    # Используем --no-cache, чтобы гарантированно переустановить пакеты с socks
+    if sudo docker compose build --no-cache && sudo docker compose up -d; then
         print_success "$MSG_CONTAINER_STARTED"
     else
         print_error "$MSG_ERROR_LAUNCH"
