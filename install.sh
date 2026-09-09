@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Определяем директорию, где лежит сам скрипт (работает даже через sudo)
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Цвета для вывода
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -31,14 +34,6 @@ if [ "$lang_choice" = "1" ]; then
     MSG_USE_PROXY="Использовать прокси для Telegram? (y/n)"
     MSG_PROXY_EXAMPLES="Примеры: http://127.0.0.1:8080 или socks5://127.0.0.1:1080"
     MSG_PROXY_URL="URL прокси"
-    MSG_GET_CHAT_ID="Получение Chat ID"
-    MSG_SEND_MESSAGE="Отправьте ЛЮБОЕ сообщение вашему боту в Telegram"
-    MSG_EXAMPLE_MESSAGE="Например: /start или просто 'привет'"
-    MSG_PRESS_ENTER="Нажмите Enter после отправки сообщения..."
-    MSG_CHAT_ID_FOUND="Найден Chat ID"
-    MSG_IS_YOUR_CHAT="Это ваш Chat ID? (y/n)"
-    MSG_ENTER_MANUALLY="Ввести Chat ID вручную? (y/n)"
-    MSG_CHAT_ID="Chat ID"
     MSG_CREATING_FILES="Создание файлов"
     MSG_ENV_CREATED=".env создан"
     MSG_FILES_COPIED="Файлы скопированы"
@@ -70,14 +65,6 @@ else
     MSG_USE_PROXY="Use proxy for Telegram? (y/n)"
     MSG_PROXY_EXAMPLES="Examples: http://127.0.0.1:8080 or socks5://127.0.0.1:1080"
     MSG_PROXY_URL="Proxy URL"
-    MSG_GET_CHAT_ID="Getting Chat ID"
-    MSG_SEND_MESSAGE="Send ANY message to your bot in Telegram"
-    MSG_EXAMPLE_MESSAGE="For example: /start or just 'hello'"
-    MSG_PRESS_ENTER="Press Enter after sending the message..."
-    MSG_CHAT_ID_FOUND="Found Chat ID"
-    MSG_IS_YOUR_CHAT="Is this your Chat ID? (y/n)"
-    MSG_ENTER_MANUALLY="Enter Chat ID manually? (y/n)"
-    MSG_CHAT_ID="Chat ID"
     MSG_CREATING_FILES="Creating files"
     MSG_ENV_CREATED=".env created"
     MSG_FILES_COPIED="Files copied"
@@ -126,12 +113,15 @@ get_chat_id() {
     local token=$1
     local proxy=$2
     
-    print_header "🔍 $MSG_GET_CHAT_ID"
-    print_info "$MSG_SEND_MESSAGE"
-    print_info "$MSG_EXAMPLE_MESSAGE"
-    echo ""
-    read -p "$MSG_PRESS_ENTER"
-    
+    # ВАЖНО: Все сообщения выводим в stderr (>&2), чтобы в переменную попал ТОЛЬКО чистый ID
+    echo -e "\n${BLUE}═══════════════════════════════════════════════════════════${NC}" >&2
+    echo -e "${BLUE}  🔍 Получение Chat ID${NC}" >&2
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}\n" >&2
+    echo -e "${BLUE}ℹ 1. Откройте Telegram и найдите вашего бота.${NC}" >&2
+    echo -e "${BLUE}ℹ 2. Отправьте ему ЛЮБОЕ сообщение (например, 'test' или '/start').${NC}" >&2
+    echo -e "${BLUE}ℹ 3. После отправки нажмите Enter здесь для проверки.${NC}" >&2
+    read -p "Нажмите Enter..." dummy >&2
+
     local url="https://api.telegram.org/bot${token}/getUpdates"
     local response
     
@@ -142,20 +132,22 @@ get_chat_id() {
     fi
     
     if [ -z "$response" ]; then
-        print_error "Failed to get response from Telegram API"
+        echo -e "${RED}✗ Не удалось получить ответ от Telegram API${NC}" >&2
         return 1
     fi
     
-    local chat_id=$(echo "$response" | python3 -c "
+    # Извлекаем chat_id и текст сообщения для красивого отображения
+    local parsed_data=$(echo "$response" | python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
     if data.get('ok') and data.get('result'):
         last_update = data['result'][-1]
-        if 'message' in last_update:
-            print(last_update['message']['chat']['id'])
-        elif 'edited_message' in last_update:
-            print(last_update['edited_message']['chat']['id'])
+        msg = last_update.get('message') or last_update.get('edited_message')
+        if msg:
+            chat_id = msg['chat']['id']
+            text = msg.get('text', 'No text')
+            print(f'{chat_id}|{text}')
         else:
             print('')
     else:
@@ -163,19 +155,22 @@ try:
 except:
     print('')
 " 2>/dev/null)
-    
-    if [ -z "$chat_id" ]; then
-        print_error "Failed to find chat_id"
+
+    if [ -z "$parsed_data" ]; then
+        echo -e "${RED}✗ Не удалось найти chat_id. Убедитесь, что вы отправили сообщение боту.${NC}" >&2
         return 1
     fi
-    
-    echo ""
-    print_success "$MSG_CHAT_ID_FOUND: $chat_id"
-    echo ""
-    read -p "$MSG_IS_YOUR_CHAT " confirm
+
+    local found_chat_id="${parsed_data%%|*}"
+    local msg_text="${parsed_data#*|}"
+
+    echo -e "\n${GREEN}✓ Найдено сообщение в чате ID: $found_chat_id${NC}" >&2
+    echo -e "${GREEN}  Текст сообщения: '$msg_text'${NC}" >&2
+    echo "" >&2
+    read -p "Это ваш чат? (y/n): " confirm >&2
     
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
-        echo "$chat_id"
+        echo "$found_chat_id" # Только это пойдет в переменную, без цветов!
         return 0
     else
         return 1
@@ -233,9 +228,9 @@ main() {
             break
         fi
         
-        read -p "$MSG_ENTER_MANUALLY " manual
+        read -p "Ввести Chat ID вручную? (y/n): " manual
         if [[ "$manual" =~ ^[Yy]$ ]]; then
-            read -p "$MSG_CHAT_ID: " TG_CHAT_ID
+            read -p "Chat ID: " TG_CHAT_ID
             break
         fi
     done
@@ -251,9 +246,11 @@ LANGUAGE=$LANGUAGE
 ENVEOF
     print_success "$MSG_ENV_CREATED"
     
-    sudo cp /home/$USER/elegoo-centauri-carbon-monitor/main.py .
-    sudo cp /home/$USER/elegoo-centauri-carbon-monitor/Dockerfile .
-    sudo cp /home/$USER/elegoo-centauri-carbon-monitor/docker-compose.yml .
+    # Копируем файлы из директории скрипта, а не из /home/$USER
+    sudo cp "$SCRIPT_DIR/main.py" .
+    sudo cp "$SCRIPT_DIR/Dockerfile" .
+    sudo cp "$SCRIPT_DIR/docker-compose.yml" .
+    sudo cp "$SCRIPT_DIR/uninstall.sh" .
     print_success "$MSG_FILES_COPIED"
     
     print_header "🚀 $MSG_LAUNCHING"
