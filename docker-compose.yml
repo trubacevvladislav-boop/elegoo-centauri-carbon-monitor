@@ -1,0 +1,8 @@
+services:
+  printer-monitor:
+    build: .
+    container_name: elegoo-monitor
+    restart: always
+    env_file:
+      - .env
+    network_mode: "host"
