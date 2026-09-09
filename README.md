@@ -1,4 +1,3 @@
-```text
 <div align="center">
 
 # 🖨️ Elegoo Centauri Carbon Monitor
